@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.routers import task_routes
-from app.db.database import DB
+from app.db.session import create_db_and_tables
 
 app = FastAPI(title="Task Management API")
 
@@ -9,7 +9,7 @@ def on_startup():
     '''
     Initializes components at application startup
     '''
-    DB()
+    create_db_and_tables()
 
 app.include_router(task_routes.router)
 
