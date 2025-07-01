@@ -3,7 +3,7 @@ from app.models.Task import Task
 from app.schemas import task
 from typing import Optional, List
 from app.schemas.task import TaskCreate, TaskUpdate
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class DB:
@@ -35,7 +35,7 @@ class DB:
             return None
         
         update_data = updates.model_dump(exclude_unset=True)
-        update_data["updated_at"] = datetime.now()
+        update_data["updated_at"] = datetime.now(timezone.utc)
 
         for key, val in update_data.items():
             setattr(db_task, key, val)
@@ -60,9 +60,9 @@ class DB:
     def filter_by_status(self, status: str) -> List[Task]:
         """Fetches the tasks based on thier status"""
         statement = select(Task).where(Task.status == status)
-        self.__session.exec(statement).all()
+        return self.__session.exec(statement).all()
 
     def filter_by_priority(self, priority: str) -> List[Task]:
         """Fetches the tasks based on the priority of each task"""
         statement = select(Task).where(Task.priority == priority)
-        self.__session.exec(statement).all()
+        return self.__session.exec(statement).all()

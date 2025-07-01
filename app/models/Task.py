@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 
@@ -37,7 +37,7 @@ class Task(SQLModel, table=True):
         description="Task priority"
     )
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=datetime.now(timezone.utc),
         description="Creation timestamp"
     )
     updated_at: Optional[datetime] = Field(

@@ -27,7 +27,8 @@ def creat_task(task: TaskCreate, db: DB = Depends(get_db)) -> TaskResponse:
     summary="List all tasks",
     response_description="List of tasks"
 )
-def all_tasks(skip: int = 0, limit: int = 10, db: DB = Depends(get_db)) -> List[TaskResponse]:
+def all_tasks(skip: int = 0, limit: int = 10,
+              db: DB = Depends(get_db)) -> List[TaskResponse]:
     """
     Retrieve a list of tasks with pagination:
 
@@ -36,7 +37,7 @@ def all_tasks(skip: int = 0, limit: int = 10, db: DB = Depends(get_db)) -> List[
     """
     try:
         return db.get_tasks(skip, limit)
-    except:
+    except ValueError as e:
         raise HTTPException(
             status_code=400,
             detail=str(e)
@@ -68,7 +69,8 @@ def task_by_id(task_id: int, db: DB = Depends(get_db)) -> TaskResponse:
     summary="Update a task",
     response_description="The updated task"
 )
-def update_task(task_id: int, updates: TaskUpdate, db: DB = Depends(get_db)) -> TaskResponse:
+def update_task(task_id: int, updates: TaskUpdate,
+                db: DB = Depends(get_db)) -> TaskResponse:
     """
     Update an existing task:
 
@@ -97,11 +99,13 @@ def delete_task(task_id: int, db: DB = Depends(get_db)) -> None:
     summary="Filter tasks by status",
     response_description="List of tasks matching status"
 )
-def filter_tasks_by_status(status: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
+def filter_tasks_by_status(status: str,
+                           db: DB = Depends(get_db)) -> List[TaskResponse]:
     """
     Filter tasks by status:
 
-    - **status**: status to filter by (pending, in_progress, completed, cancelled)
+    - **status**: status to filter by (pending, in_progress,
+    completed, cancelled)
     """
     try:
         return db.filter_by_status(status)
@@ -118,7 +122,8 @@ def filter_tasks_by_status(status: str, db: DB = Depends(get_db)) -> List[TaskRe
     summary="Filter tasks by priority",
     response_description="List of tasks matching priority"
 )
-def filter_tasks_by_priority(priority: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
+def filter_tasks_by_priority(priority: str,
+                             db: DB = Depends(get_db)) -> List[TaskResponse]:
     """
     Filter tasks by priority:
 

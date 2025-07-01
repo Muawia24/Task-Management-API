@@ -1,8 +1,8 @@
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional
-from models.Task import TaskStatus, TaskPriority
-from datetime import datetime
+from app.models.Task import TaskStatus, TaskPriority
+from datetime import datetime, timezone
 
 
 class TaskCreate(BaseModel):
@@ -19,13 +19,17 @@ class TaskCreate(BaseModel):
          """Ensure title is not empty"""
          if not val.strip():
               raise ValueError("Title can not be empty")
-         return val
+         return val.strip()
     @field_validator('due_date')
     @classmethod
     def validate_deadline(cls, val: Optional[datetime]) -> Optional[datetime]:
          """Ensure deadline is in the future"""
-         if val and val <= datetime.now():
-              raise ValueError('Due date must be in the future')
+         if val:
+            if val.tzinfo is None:
+                # Assume UTC if no timezone is provided
+                val = val.replace(tzinfo=timezone.utc)
+            if val and val <= datetime.now(timezone.utc):
+                raise ValueError('Due date must be in the future')
          return val
 
 class TaskUpdate(BaseModel):
@@ -35,7 +39,6 @@ class TaskUpdate(BaseModel):
     priority: Optional[TaskPriority] = None
     due_date: Optional[datetime] = None
     assigned_to: Optional[str] = Field(None, max_length=100)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
 
     @field_validator('title')
     @classmethod
@@ -43,14 +46,18 @@ class TaskUpdate(BaseModel):
          """Ensure title is not empty if provided"""
          if val is not None and not val.strip():
               raise ValueError("Title can not be empty")
-         return val
+         return val.strip() if val else val
     
     @field_validator('due_date')
     @classmethod
     def validate_deadline(cls, val: Optional[datetime]) -> Optional[datetime]:
          """Ensure deadline is in the future"""
-         if val and val <= datetime.now():
-              raise ValueError('Due date must be in the future')
+         if val:
+            if val.tzinfo is None:
+                # Assume UTC if no timezone is provided
+                val = val.replace(tzinfo=timezone.utc)
+            if val and val <= datetime.now(timezone.utc):
+                raise ValueError('Due date must be in the future')
          return val
 
 class TaskResponse(TaskCreate):
