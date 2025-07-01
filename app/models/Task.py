@@ -37,7 +37,7 @@ class Task(SQLModel, table=True):
         description="Task priority"
     )
     created_at: datetime = Field(
-        default_factory=datetime.now(timezone.utc),
+        default_factory=datetime.utcnow,
         description="Creation timestamp"
     )
     updated_at: Optional[datetime] = Field(
