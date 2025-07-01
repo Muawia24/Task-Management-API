@@ -28,7 +28,7 @@ class DB:
         """Query task object in tasks based on task_id"""
         return self.__session.get(Task, task_id)
 
-    def update_task(self, task: int, updates: TaskUpdate) -> Optional[Task]:
+    def update_task(self, task_id: int, updates: TaskUpdate) -> Optional[Task]:
         """Query and update task object based on task_id"""
         db_task = self.get_task(task_id)
         if not db_task:
