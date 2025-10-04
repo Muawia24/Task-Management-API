@@ -136,3 +136,25 @@ def filter_tasks_by_priority(priority: str,
             status_code=400,
             detail=str(e)
         )
+    
+@router.get(
+    "/filter",
+    response_model=List[TaskResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Filter tasks by status and priority",
+    response_description="List of tasks matching status and priority"
+)
+def filter_tasks(priority: str = None, status: str = None,
+                 db: DB = Depends(get_db)) -> List[TaskResponse]:
+    """ Filter tasks by status and/or priority:
+    - **priority**: priority to filter by (low, medium, high, urgent)
+    - **status**: status to filter by (pending, in_progress,
+    completed, cancelled)
+    """
+    try:
+        return db.filter_tasks(priority, status)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )

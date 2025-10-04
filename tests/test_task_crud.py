@@ -54,3 +54,5 @@ class TestTasks:
         # Make sure it's really deleted
         check = client.get(f"/tasks/{task['id']}")
         assert check.status_code == 404
+
+    

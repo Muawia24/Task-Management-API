@@ -66,3 +66,16 @@ class DB:
         """Fetches the tasks based on the priority of each task"""
         statement = select(Task).where(Task.priority == priority)
         return self.__session.exec(statement).all()
+    
+    def filter_tasks(self, priority: Optional[str] = None,
+                     Status: Optional[str] = None) -> List[Task]:
+        """Fetches the tasks based on the priority and status of each task"""
+        if not priority and not Status:
+            raise ValueError("At least one filter (priority or status) must be provided.")
+        
+        statment = select(Task).where(Task.priority == priority and Task.status == Status)
+
+        if not statment:
+            return []
+        
+        return self.__session.exec(statment).all()
