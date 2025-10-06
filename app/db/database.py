@@ -1,4 +1,5 @@
-from sqlmodel import Session, select
+from fastapi import HTTPException
+from sqlmodel import Session, select, case
 from app.models.Task import Task, TaskPriority, TaskStatus
 from app.schemas import task
 from typing import Optional, List
@@ -70,13 +71,49 @@ class DB:
         self.__session.commit()
 
         return True
+    
+    def sort_tasks(self, field: str) -> List[Task]:
+        """Sort tasks based on a given field"""
+        field = field.lower()
+        valid_fields = {
+            "title": Task.title,
+            "created_at": Task.created_at,
+            "due_date": Task.due_date,
+            "priority": Task.priority,
+            "status": Task.status
+        }
 
-    def filter_by_status(self, status: str) -> List[Task]:
-        """Fetches the tasks based on thier status"""
-        statement = select(Task).where(Task.status == status)
-        return self.__session.exec(statement).all()
+        if field not in valid_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid field '{field}' for sorting. Valid fields are: {', '.join(valid_fields.keys())}"
+            )
+        
+        order_expr = valid_fields[field]
 
-    def filter_by_priority(self, priority: str) -> List[Task]:
-        """Fetches the tasks based on the priority of each task"""
-        statement = select(Task).where(Task.priority == priority)
-        return self.__session.exec(statement).all()
+        if field == "priority":
+            order_expr = case(
+                (Task.priority == TaskPriority.urgent, 1),
+                (Task.priority == TaskPriority.high, 2),
+                (Task.priority == TaskPriority.medium, 3),
+                (Task.priority == TaskPriority.low, 4),
+                else_=5
+            )
+        
+        elif field == "status":
+            order_expr = case(
+                (Task.status == TaskStatus.pending, 1),
+                (Task.status == TaskStatus.in_progress, 2),
+                (Task.status == TaskStatus.completed, 3),
+                (Task.status == TaskStatus.cancelled, 4),
+                else_=5
+            )
+        
+        statement = select(Task).order_by(order_expr)
+        sorted_tasks = self.__session.exec(statement).all()
+
+        if not sorted_tasks:
+            raise HTTPException(status_code=404, detail="No tasks found to sort.")
+        
+        return sorted_tasks
+    
