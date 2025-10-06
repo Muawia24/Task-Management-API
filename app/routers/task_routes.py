@@ -94,4 +94,18 @@ def delete_task(task_id: int, db: DB = Depends(get_db)) -> None:
     - **task_id**: the ID of task to delete
     """
     if not db.delete_task(task_id):
-        raise HTTPException(status_code=404, detail="Task not found")   
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    return None
+    
+@router.get("/sort-by/{field}", response_model=List[TaskResponse], status_code=status.HTTP_200_OK)
+def sort_tasks(field: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
+    """
+    Sort tasks by a specified field:
+    - **field**: the field to sort by (e.g., 'priority', 'due_date')
+    """
+    try:
+        return db.sort_tasks(field)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Server error")
+        
