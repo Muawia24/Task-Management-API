@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from app.models.Task import Task
+from app.models.Task import Task, TaskPriority, TaskStatus
 from app.schemas import task
 from typing import Optional, List
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -19,9 +19,23 @@ class DB:
         self.__session.refresh(db_task)
         return db_task
 
-    def get_tasks(self, skip: int = 0, limit: int = 10) -> List[Task]:
-        """Query all tasks objects for curent session"""
+    def get_tasks_pagination_and_filter(self, skip: int = 0, limit: int = 10,
+                  priority: Optional[TaskPriority] = None,
+                  status: Optional[TaskStatus] = None) -> List[Task]:
+        """
+
+        """
         statement = select(Task).offset(skip).limit(limit)
+        if not priority and not status:
+            return self.__session.exec(statement).all()
+        
+        if priority and not status:
+            statement = statement.where(Task.priority == priority)
+            
+        if status and not priority:
+            statement = statement.where(Task.status == status)
+
+        statement = statement.where(Task.priority == priority, Task.status == status)
         return self.__session.exec(statement).all()
 
     def get_task(self, task_id: int) -> Optional[Task]:
@@ -66,16 +80,3 @@ class DB:
         """Fetches the tasks based on the priority of each task"""
         statement = select(Task).where(Task.priority == priority)
         return self.__session.exec(statement).all()
-    
-    def filter_tasks(self, priority: Optional[str] = None,
-                     Status: Optional[str] = None) -> List[Task]:
-        """Fetches the tasks based on the priority and status of each task"""
-        if not priority and not Status:
-            raise ValueError("At least one filter (priority or status) must be provided.")
-        
-        statment = select(Task).where(Task.priority == priority and Task.status == Status)
-
-        if not statment:
-            return []
-        
-        return self.__session.exec(statment).all()

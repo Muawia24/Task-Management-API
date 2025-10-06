@@ -1,3 +1,4 @@
+from typing import Optional
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session
@@ -5,7 +6,7 @@ from sqlmodel.pool import StaticPool
 
 from app.main import app
 from app.db.dependancies import get_db
-from app.models.Task import Task
+from app.models.Task import Task, TaskPriority, TaskStatus
 
 
 @pytest.fixture
@@ -30,9 +31,19 @@ def client():
                     session.refresh(db_task)
                     return db_task
                 
-                def get_tasks(self, skip=0, limit=10):
+                def get_tasks_pagination_and_filter(self, skip=0, limit=10, priority=None, status=None):
                     from sqlmodel import select
                     statement = select(Task).offset(skip).limit(limit)
+                    if not priority and not status:
+                        return session.exec(statement).all()
+
+                    if priority and not status:
+                        statement = statement.where(Task.priority == priority)
+                        
+                    if status and not priority:
+                        statement = statement.where(Task.status == status)
+
+                    statement = statement.where(Task.priority == priority, Task.status == status)
                     return session.exec(statement).all()
                 
                 def get_task(self, task_id):

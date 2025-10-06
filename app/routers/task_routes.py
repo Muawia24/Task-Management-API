@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from app.models.Task import TaskPriority, TaskStatus
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
 from app.db.database import DB
 from app.db.dependancies import get_db
-from typing import List
+from typing import List, Optional
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -24,11 +25,15 @@ def creat_task(task: TaskCreate, db: DB = Depends(get_db)) -> TaskResponse:
     "/",
     response_model=List[TaskResponse],
     status_code=status.HTTP_200_OK,
-    summary="List all tasks",
-    response_description="List of tasks"
+    summary="List all tasks with pagination and filters",
+    response_description="List of paginated and filterd tasks"
 )
-def all_tasks(skip: int = 0, limit: int = 10,
-              db: DB = Depends(get_db)) -> List[TaskResponse]:
+def all_tasks(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1),
+    priority: Optional[TaskPriority] = Query(None),
+    status: Optional[TaskStatus] = Query(None),
+    db: DB = Depends(get_db)) -> List[TaskResponse]:
     """
     Retrieve a list of tasks with pagination:
 
@@ -36,7 +41,7 @@ def all_tasks(skip: int = 0, limit: int = 10,
     - **limit**: maximum number of items to return (default 10)
     """
     try:
-        return db.get_tasks(skip, limit)
+        return db.get_tasks_pagination_and_filter(skip, limit, priority, status)
     except ValueError as e:
         raise HTTPException(
             status_code=400,
@@ -73,7 +78,6 @@ def update_task(task_id: int, updates: TaskUpdate,
                 db: DB = Depends(get_db)) -> TaskResponse:
     """
     Update an existing task:
-
     - **task_id**: the ID of task to update
     - **updates**: fields to update (all optional)
     """
@@ -90,71 +94,4 @@ def delete_task(task_id: int, db: DB = Depends(get_db)) -> None:
     - **task_id**: the ID of task to delete
     """
     if not db.delete_task(task_id):
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-@router.get(
-    "/status/{status}",
-    response_model=List[TaskResponse],
-    status_code=status.HTTP_200_OK,
-    summary="Filter tasks by status",
-    response_description="List of tasks matching status"
-)
-def filter_tasks_by_status(status: str,
-                           db: DB = Depends(get_db)) -> List[TaskResponse]:
-    """
-    Filter tasks by status:
-
-    - **status**: status to filter by (pending, in_progress,
-    completed, cancelled)
-    """
-    try:
-        return db.filter_by_status(status)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
-    
-@router.get(
-    "/priority/{priority}",
-    response_model=List[TaskResponse],
-    status_code=status.HTTP_200_OK,
-    summary="Filter tasks by priority",
-    response_description="List of tasks matching priority"
-)
-def filter_tasks_by_priority(priority: str,
-                             db: DB = Depends(get_db)) -> List[TaskResponse]:
-    """
-    Filter tasks by priority:
-
-    - **priority**: priority to filter by (low, medium, high, urgent)
-    """
-    try:
-        return db.filter_by_priority(priority)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
-    
-@router.get(
-    "/filter",
-    response_model=List[TaskResponse],
-    status_code=status.HTTP_200_OK,
-    summary="Filter tasks by status and priority",
-    response_description="List of tasks matching status and priority"
-)
-def filter_tasks(priority: str = None, status: str = None,
-                 db: DB = Depends(get_db)) -> List[TaskResponse]:
-    """ Filter tasks by status and/or priority:
-    - **priority**: priority to filter by (low, medium, high, urgent)
-    - **status**: status to filter by (pending, in_progress,
-    completed, cancelled)
-    """
-    try:
-        return db.filter_tasks(priority, status)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=404, detail="Task not found")   

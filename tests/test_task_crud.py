@@ -30,8 +30,9 @@ class TestTasks:
     def test_get_tasks(self, client: TestClient):
         client.post("/tasks/", json={"title": "One"})
         client.post("/tasks/", json={"title": "Two"})
-        response = client.get("/tasks/")
+        response = client.get("/tasks?skip=0&limit=2")
         assert response.status_code == 200
+        print(response.json())
         assert len(response.json()) >= 2
 
     def test_get_task_by_id(self, client: TestClient):
@@ -55,4 +56,12 @@ class TestTasks:
         check = client.get(f"/tasks/{task['id']}")
         assert check.status_code == 404
 
-    
+    def test_filter_tasks_by_priority_and_status(self, client: TestClient):
+        client.post("/tasks/", json={"title": "High Priority", "priority": "high"})
+        client.post("/tasks/", json={"title": "Low Priority", "priority": "low"})
+        filtered_result = client.get("/tasks?priority=high&status=pending")
+        print(filtered_result.json())
+        assert filtered_result.status_code == 200
+        for task in filtered_result.json():
+            assert task["priority"] == "high"
+            assert task["status"] == "pending"
