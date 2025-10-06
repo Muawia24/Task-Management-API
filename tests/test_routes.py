@@ -98,3 +98,46 @@ def test_sort_tasks_valid_and_invalid(client: TestClient):
     assert res_bad.status_code in (400, 500)
 
 
+def test_search_tasks_title_match_case_insensitive(client: TestClient):
+    client.post("/tasks/", json=create_payload(title="Refactor Parser"))
+    client.post("/tasks/", json=create_payload(title="write docs"))
+    res = client.get("/tasks/search", params={"text": "parser"})
+    assert res.status_code == 200
+    data = res.json()
+    assert any("Refactor Parser" == t["title"] for t in data)
+
+
+def test_search_tasks_description_match(client: TestClient):
+    client.post("/tasks/", json=create_payload(title="a", description="Implement fuzzy SEARCH"))
+    client.post("/tasks/", json=create_payload(title="b", description="nothing relevant"))
+    res = client.get("/tasks/search", params={"text": "search"})
+    assert res.status_code == 200
+    titles = [t["title"] for t in res.json()]
+    assert "a" in titles
+
+
+def test_search_tasks_pagination(client: TestClient):
+    for i in range(5):
+        client.post("/tasks/", json=create_payload(title=f"Feature {i}", description="feature work"))
+    res1 = client.get("/tasks/search", params={"text": "feature", "skip": 0, "limit": 2})
+    res2 = client.get("/tasks/search", params={"text": "feature", "skip": 2, "limit": 2})
+    assert res1.status_code == 200 and res2.status_code == 200
+    assert len(res1.json()) == 2
+    assert len(res2.json()) == 2
+    ids1 = {t["id"] for t in res1.json()}
+    ids2 = {t["id"] for t in res2.json()}
+    assert ids1.isdisjoint(ids2)
+
+
+def test_search_tasks_empty_text_400(client: TestClient):
+    # text provided but empty should trigger 400 from DB layer
+    res = client.get("/tasks/search", params={"text": ""})
+    assert res.status_code == 400
+
+
+def test_search_tasks_no_results_404(client: TestClient):
+    client.post("/tasks/", json=create_payload(title="Alpha"))
+    res = client.get("/tasks/search", params={"text": "ZZZ_not_found"})
+    assert res.status_code == 404
+
+

@@ -47,6 +47,35 @@ def all_tasks(
             status_code=400,
             detail=str(e)
         )
+    
+@router.get(
+        "/search",
+        response_model=List[TaskResponse],
+        status_code=status.HTTP_200_OK,
+        summary="Search tasks by text in title or description with pagination",
+        response_description="List of tasks matching the search criteria with pagination"
+    )
+def search_tasks(
+    text: str = Query(..., description="Text to search in title / description"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1),
+    db: DB = Depends(get_db)
+    ) -> List[TaskResponse]:
+    """
+    Search tasks by text in title or description with pagination:
+    - **text**: text to search for (required)
+    - **skip**: number of items to skip (default 0) 
+    - **limit**: maximum number of items to return (default 10)
+    """
+    try:
+        return db.search_tasks(text, skip, limit)
+    except HTTPException:
+        raise 
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Server error"
+        )
 
 
 @router.get(
@@ -108,4 +137,3 @@ def sort_tasks(field: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
         return db.sort_tasks(field)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Server error")
-        

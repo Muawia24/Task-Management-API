@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlmodel import Session, select, case
+from sqlmodel import Session, select, case, func, or_
 from app.models.Task import Task, TaskPriority, TaskStatus
 from app.schemas import task
 from typing import Optional, List
@@ -117,3 +117,29 @@ class DB:
         
         return sorted_tasks
     
+    def search_tasks(self, text: str, skip: int = 0, limit: int = 10) -> List[Task]:
+        """"
+        Search tasks by text in title or description with pagination
+        """
+        if not text:
+            raise HTTPException(status_code=400, detail="Search text cannot be empty.")
+        
+
+        statment = (
+            select(Task)
+            .where(
+                or_(
+                    func.lower(Task.title).like(f"%{text.lower()}%"),
+                    func.lower(Task.description).like(f"%{text.lower()}%")
+                )
+            )
+            .offset(skip)
+            .limit(limit)
+        )
+
+        tasks = self.__session.exec(statment).all()
+
+        if not tasks:
+            raise HTTPException(status_code=404, detail="No Task Found")
+        
+        return tasks
