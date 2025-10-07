@@ -1,6 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from app.models.Task import TaskStatus, TaskPriority
 from datetime import datetime, timezone
 
@@ -73,3 +73,17 @@ class TaskResponse(TaskCreate):
             Enum: lambda v: v.value
         }
     )
+
+class TaskBulkUpdateItem(BaseModel):
+    id: int
+    title: Optional[str] = None
+    description: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    due_date: Optional[datetime] = None
+
+class TaskBulkUpdateRequest(BaseModel):
+    updates: List[TaskBulkUpdateItem]
+
+class TaskBulkDeleteRequest(BaseModel):
+    task_ids: List[int]
