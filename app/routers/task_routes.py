@@ -75,7 +75,7 @@ def search_tasks(
         raise HTTPException(
             status_code=500,
             detail="Server error"
-        )
+        ) from e
 
 
 @router.get(
@@ -136,4 +136,4 @@ def sort_tasks(field: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
     try:
         return db.sort_tasks(field)
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Server error")
+        raise HTTPException(status_code=500, detail="Server error") from e
