@@ -1,0 +1,82 @@
+language: en
+
+reviews:
+  # Enable detailed reviews with context
+  profile: "chill"  # Options: "chill", "assertive"
+
+  # Request changes workflow
+  request_changes_workflow: true
+
+  # Auto-reviews for pull requests
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Security scanning configuration
+  security_scanning:
+    enabled: true
+    scan_dependencies: true
+    scan_secrets: true
+    vulnerability_alerts: true
+    sast_enabled: true  # Static Application Security Testing
+
+  # AI-powered suggestions
+  ai_suggestions:
+    enabled: true
+    features:
+      - code_optimization
+      - security_best_practices
+      - performance_improvements
+      - accessibility_enhancements
+      - test_coverage
+
+  # Path-based review settings
+  path_instructions:
+    - path: "app/routers/**"
+      instructions: |
+        Prioritize security best practices, including input validation and authentication.
+        Ensure robust error handling and logging.
+        Optimize for performance, especially for high-traffic endpoints.
+    - path: "app/models/**"
+      instructions: |
+        Ensure data integrity and proper validation.
+        Check for efficient data structures and relationships.
+    - path: "app/schemas/**"
+      instructions: |
+        Focus on data validation and serialization.
+        Ensure compatibility with API endpoints and models.
+    - path: "app/db/**"
+      instructions: |
+        Focus on data integrity, query optimization, and security best practices.
+        Ensure proper error handling and transaction management.
+    
+
+  # Severity levels for different types of issues
+  severity:
+    critical:
+      - security_vulnerabilities
+      - memory_leaks
+      - authentication_bypass
+      - data_exposure
+    high:
+      - performance_issues
+      - security_misconfiguration
+      - insecure_dependencies
+    medium:
+      - code_style_violations
+      - accessibility_issues
+      - type_safety_concerns
+    low:
+      - documentation_missing
+      - code_duplication
+      - naming_conventions
+
+  # AI-powered code metrics
+  code_metrics:
+    enabled: true
+    analyze:
+      - cyclomatic_complexity
+      - cognitive_complexity
+      - maintainability_index
+      - code_duplication
+      - test_coverage
