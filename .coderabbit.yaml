@@ -32,34 +32,23 @@ reviews:
 
   # Path-based review settings
   path_instructions:
-   
-
-    # API Routes - Focus on security, performance, and error handling
-    "app/routers/**":
-      instructions:
-        - "Prioritize security best practices, including input validation and authentication."
-        - "Ensure robust error handling and logging."
-        - "Optimize for performance, especially for high-traffic endpoints."
-
-    # Models and Schemas - Focus on data integrity and validation
-    "app/models/**":
-      instructions:
-        - "Ensure data integrity and proper validation."
-        - "Check for efficient data structures and relationships."
-
-    "app/schemas/**":
-      instructions:
-        - "Focus on data validation and serialization."
-        - "Ensure compatibility with API endpoints and models."
-
-    
-
-    # Database Layer - Focus on query optimization and security
-    "app/db/**":
-      instructions:
-        - "Focus on data integrity, query optimization, and security best practices."
-        - "Ensure proper error handling and transaction management."
-
+    - path: "app/routers/**"
+      instructions: |
+        Prioritize security best practices, including input validation and authentication.
+        Ensure robust error handling and logging.
+        Optimize for performance, especially for high-traffic endpoints.
+    - path: "app/models/**"
+      instructions: |
+        Ensure data integrity and proper validation.
+        Check for efficient data structures and relationships.
+    - path: "app/schemas/**"
+      instructions: |
+        Focus on data validation and serialization.
+        Ensure compatibility with API endpoints and models.
+    - path: "app/db/**"
+      instructions: |
+        Focus on data integrity, query optimization, and security best practices.
+        Ensure proper error handling and transaction management.
     
 
   # Severity levels for different types of issues
