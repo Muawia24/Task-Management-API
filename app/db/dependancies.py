@@ -1,5 +1,5 @@
 from fastapi import Depends
-from sqlmodel import Session, g
+from sqlmodel import Session
 from .session import get_session
 from .database import DB
 
