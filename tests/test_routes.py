@@ -20,6 +20,11 @@ def create_payload(**overrides):
     data.update(overrides)
     return data
 
+def create_task(client: TestClient, **overrides) -> dict:
+    res = client.post("/tasks/", json=create_payload(**overrides))
+    assert res.status_code == 201
+    return res.json()
+
 
 def test_create_task_route_success(client: TestClient):
     res = client.post("/tasks/", json=create_payload())
@@ -138,6 +143,70 @@ def test_search_tasks_empty_text_400(client: TestClient):
 def test_search_tasks_no_results_404(client: TestClient):
     client.post("/tasks/", json=create_payload(title="Alpha"))
     res = client.get("/tasks/search", params={"text": "ZZZ_not_found"})
+    assert res.status_code == 404
+
+
+def test_bulk_update_success(client: TestClient):
+    t1 = create_task(client, title="one")
+    t2 = create_task(client, title="two")
+
+    payload = {
+        "updates": [
+            {"id": t1["id"], "title": "ONE", "status": TaskStatus.in_progress.value},
+            {"id": t2["id"], "priority": TaskPriority.high.value},
+        ]
+    }
+
+    res = client.put("/tasks/bulk-update", json=payload)
+    assert res.status_code == 200
+    body = res.json()
+    assert body["updated_count"] == 2
+
+    # verify updates applied
+    r1 = client.get(f"/tasks/{t1['id']}").json()
+    r2 = client.get(f"/tasks/{t2['id']}").json()
+    assert r1["title"] == "ONE"
+    assert r1["status"] == TaskStatus.in_progress.value
+    assert r2["priority"] == TaskPriority.high.value
+
+
+def test_bulk_update_empty_list_returns_400(client: TestClient):
+    res = client.put("/tasks/bulk-update", json={"updates": []})
+    assert res.status_code == 400
+
+
+def test_bulk_update_items_without_id(client: TestClient):
+    t = create_task(client, title="keep")
+    payload = {
+        "updates": [
+            {"title": "no-id"},  # ignored
+            {"id": t["id"], "title": "updated"},
+        ]
+    }
+    res = client.put("/tasks/bulk-update", json=payload)
+    assert res.status_code == 422
+    
+
+
+def test_bulk_delete_success(client: TestClient):
+    t1 = create_task(client)
+    t2 = create_task(client)
+    res = client.request("DELETE","/tasks/bulk-delete", json={"task_ids": [t1["id"], t2["id"]]})
+    assert res.status_code == 200
+    assert res.json()["deleted"] == 2
+
+    # verify deleted
+    assert client.get(f"/tasks/{t1['id']}").status_code == 404
+    assert client.get(f"/tasks/{t2['id']}").status_code == 404
+
+
+def test_bulk_delete_empty_list_returns_400(client: TestClient):
+    res = client.request("DELETE", "/tasks/bulk-delete", json={"task_ids": []})
+    assert res.status_code == 400
+
+
+def test_bulk_delete_all_nonexistent_returns_404(client: TestClient):
+    res = client.request("DELETE", "/tasks/bulk-delete", json={"task_ids": [999999, 888888]})
     assert res.status_code == 404
 
 

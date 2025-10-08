@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.models.Task import TaskPriority, TaskStatus
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
+from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskBulkUpdateRequest, TaskBulkDeleteRequest
 from app.db.database import DB
 from app.db.dependancies import get_db
 from typing import List, Optional
@@ -20,6 +20,7 @@ def creat_task(task: TaskCreate, db: DB = Depends(get_db)) -> TaskResponse:
         return db.create_task(task)
     except ValueError as e:
         raise HTTPException(400, detail=str(e))
+
 
 @router.get(
     "/",
@@ -47,7 +48,8 @@ def all_tasks(
             status_code=400,
             detail=str(e)
         )
-    
+
+
 @router.get(
         "/search",
         response_model=List[TaskResponse],
@@ -78,6 +80,76 @@ def search_tasks(
         ) from e
 
 
+from pydantic import BaseModel
+
+class BulkUpdateResponse(BaseModel):
+    updated_count: int
+
+@router.put(
+    "/bulk-update",
+    status_code=status.HTTP_200_OK,
+    summary="Bulk update tasks",
+    response_description="Number of tasks updated",
+    response_model=BulkUpdateResponse
+)
+def bulk_update_tasks(
+    payload: TaskBulkUpdateRequest,
+    db: DB = Depends(get_db)
+) -> BulkUpdateResponse:
+    """
+    Bulk update multiple tasks at once.
+    - **updates**: List of task updates, each with required 'id' and optional fields to update
+
+    Returns the count of tasks actually updated.
+    Raises 404 if any task IDs don't exist.
+    Raises 400 if updates list is empty.
+    Raises 422 if validation fails on any item.
+    """
+    try:
+        # Convert list of TaskUpdate to list of dicts, excluding unset fields
+        tasks = [task.model_dump(exclude_unset=True) for task in payload.updates]
+        updated_count = db.bulk_update_tasks(tasks)
+
+        return BulkUpdateResponse(updated_count=updated_count)
+    
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Server error"
+        ) from e
+
+
+@router.delete(
+        "/bulk-delete",
+        status_code=status.HTTP_200_OK,
+        summary="Bulk delete tasks",
+        response_description="Number of tasks deleted"
+)
+def bulk_delete_tasks(
+    payload: TaskBulkDeleteRequest,
+    db: DB = Depends(get_db)    
+):
+    """
+    Bulk delete multiple tasks at once.
+    - **task_ids**: List of task IDs to delete
+    """
+    try:
+        count_deleted = db.bulk_delete_tasks(payload.task_ids)
+
+        return {"deleted": count_deleted}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Server error"
+        ) from e
+
+
 @router.get(
     "/{task_id}",
     response_model=TaskResponse,
@@ -95,6 +167,7 @@ def task_by_id(task_id: int, db: DB = Depends(get_db)) -> TaskResponse:
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
 
 @router.put(
     "/{task_id}",
@@ -115,6 +188,7 @@ def update_task(task_id: int, updates: TaskUpdate,
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
+
 @router.delete("/{task_id}", status_code=204)
 def delete_task(task_id: int, db: DB = Depends(get_db)) -> None:
     """
@@ -126,7 +200,8 @@ def delete_task(task_id: int, db: DB = Depends(get_db)) -> None:
         raise HTTPException(status_code=404, detail="Task not found")
     
     return None
-    
+
+
 @router.get("/sort-by/{field}", response_model=List[TaskResponse], status_code=status.HTTP_200_OK)
 def sort_tasks(field: str, db: DB = Depends(get_db)) -> List[TaskResponse]:
     """

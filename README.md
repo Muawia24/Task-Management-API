@@ -6,8 +6,10 @@ A comprehensive task management API built with FastAPI, SQLModel, and SQLite. Th
 
 - **Full CRUD Operations**: Create, Read, Update, and Delete tasks
 - **Data Validation**: Comprehensive input validation using Pydantic
-- **Filtering**: Filter tasks by status and priority
-- **Pagination**: Support for skip/limit query parameters
+- **Filtering**: Filter tasks by `status` and `priority` query parameters
+- **Pagination**: Support for `skip`/`limit` query parameters
+- **Sorting**: Sort tasks by `title`, `created_at`, `due_date`, `priority`, `status`
+- **Full-text Search**: Search tasks by text across `title` and `description`
 - **Database Integration**: SQLModel/SQLAlchemy with SQLite
 - **API Documentation**: Automatic OpenAPI/Swagger documentation
 - **Error Handling**: Proper error responses with meaningful messages
@@ -65,9 +67,19 @@ The API will be available at:
 - `PUT /tasks/{task_id}` - Update an existing task
 - `DELETE /tasks/{task_id}` - Delete a task
 
-### Filtering
-- `GET /tasks/status/{status}` - Filter tasks by status
-- `GET /tasks/priority/{priority}` - Filter tasks by priority
+### Sorting
+- `GET /tasks/sort-by/{field}` - Sort tasks by a field
+  - Valid fields: `title`, `created_at`, `due_date`, `priority`, `status`
+  - `priority` order: urgent > high > medium > low
+  - `status` order: pending > in_progress > completed > cancelled
+
+### Search
+- `GET /tasks/search?text=...&skip=0&limit=10` - Search in `title` and `description` with pagination
+
+### Filtering (via query parameters)
+- `GET /tasks/?status={status}` - Filter tasks by status
+- `GET /tasks/?priority={priority}` - Filter tasks by priority
+- Both filters can be combined with pagination: `GET /tasks/?status={status}&priority={priority}&skip=0&limit=10`
 
 ## Data Models
 
@@ -122,6 +134,24 @@ curl "http://localhost:8000/tasks/"
 curl "http://localhost:8000/tasks/?skip=0&limit=5"
 ```
 
+### Filter Tasks by Status and/or Priority
+```bash
+curl "http://localhost:8000/tasks/?status=pending"
+curl "http://localhost:8000/tasks/?priority=high"
+curl "http://localhost:8000/tasks/?status=in_progress&priority=urgent&skip=0&limit=10"
+```
+
+### Sort Tasks
+```bash
+curl "http://localhost:8000/tasks/sort-by/title"
+curl "http://localhost:8000/tasks/sort-by/priority"
+```
+
+### Search Tasks
+```bash
+curl "http://localhost:8000/tasks/search?text=report&skip=0&limit=10"
+```
+
 ### Get a Specific Task
 ```bash
 curl "http://localhost:8000/tasks/1"
@@ -137,15 +167,10 @@ curl -X PUT "http://localhost:8000/tasks/1" \
      }'
 ```
 
-### Filter Tasks by Status
-```bash
-curl "http://localhost:8000/tasks/status/pending"
-```
-
-### Filter Tasks by Priority
-```bash
-curl "http://localhost:8000/tasks/priority/high"
-```
+### Notes on Search
+- Case-insensitive search across `title` and `description`
+- Empty `text` returns `400`
+- No matches return `404`
 
 ### Delete a Task
 ```bash
