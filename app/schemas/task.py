@@ -78,9 +78,29 @@ class TaskBulkUpdateItem(BaseModel):
     id: int
     title: Optional[str] = None
     description: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
+    priority: Optional[TaskPriority] = None
+    status: Optional[TaskStatus] = None
     due_date: Optional[datetime] = None
+
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, val: Optional[str]) -> Optional[str]:
+        """Ensure title is not empty if provided"""
+        if val is not None and not val.strip():
+            raise ValueError("Title can not be empty")
+        return val.strip() if val else val
+
+    @field_validator('due_date')
+    @classmethod
+    def validate_deadline(cls, val: Optional[datetime]) -> Optional[datetime]:
+        """Ensure deadline is in the future"""
+        if val:
+            if val.tzinfo is None:
+                # Assume UTC if no timezone is provided
+                val = val.replace(tzinfo=timezone.utc)
+            if val <= datetime.now(timezone.utc):
+                raise ValueError("Due date must be in the future")
+        return val
 
 class TaskBulkUpdateRequest(BaseModel):
     updates: List[TaskBulkUpdateItem]
