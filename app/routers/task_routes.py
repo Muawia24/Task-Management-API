@@ -80,30 +80,37 @@ def search_tasks(
         ) from e
 
 
+from pydantic import BaseModel
+
+class BulkUpdateResponse(BaseModel):
+    updated_count: int
+
 @router.put(
-        "/bulk-update",
-        status_code=status.HTTP_200_OK,
-        summary="Bulk update tasks",
-        response_description="Number of tasks updated"
+    "/bulk-update",
+    status_code=status.HTTP_200_OK,
+    summary="Bulk update tasks",
+    response_description="Number of tasks updated",
+    response_model=BulkUpdateResponse
 )
 def bulk_update_tasks(
     payload: TaskBulkUpdateRequest,
     db: DB = Depends(get_db)
-) -> dict:
+) -> BulkUpdateResponse:
     """
     Bulk update multiple tasks at once.
-    - **task_ids**: List of task IDs to update
-    - **updates**: Fields to update (all optional)
+    - **updates**: List of task updates, each with required 'id' and optional fields to update
+
+    Returns the count of tasks actually updated.
+    Raises 404 if any task IDs don't exist.
+    Raises 400 if updates list is empty.
+    Raises 422 if validation fails on any item.
     """
     try:
-        if not payload.updates:
-            raise HTTPException(status_code=400, detail="No tasks provided for bulk update.")
-        
         # Convert list of TaskUpdate to list of dicts, excluding unset fields
         tasks = [task.model_dump(exclude_unset=True) for task in payload.updates]
         updated_count = db.bulk_update_tasks(tasks)
 
-        return {"updated_count": updated_count}
+        return BulkUpdateResponse(updated_count=updated_count)
     
     except HTTPException:
         raise
