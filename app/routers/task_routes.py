@@ -81,24 +81,32 @@ def search_tasks(
 
 
 @router.put(
-        "bulk-update",
-        response_model=List[TaskResponse],
+        "/bulk-update",
         status_code=status.HTTP_200_OK,
         summary="Bulk update tasks",
-        response_description="List of updated tasks"
+        response_description="Number of tasks updated"
 )
 def bulk_update_tasks(
     payload: TaskBulkUpdateRequest,
     db: DB = Depends(get_db)
-) -> List[TaskResponse]:
+) -> dict:
     """
     Bulk update multiple tasks at once.
     - **task_ids**: List of task IDs to update
     - **updates**: Fields to update (all optional)
     """
     try:
+        if not payload.updates:
+            raise HTTPException(status_code=400, detail="No tasks provided for bulk update.")
+        
+        # Convert list of TaskUpdate to list of dicts, excluding unset fields
         tasks = [task.model_dump(exclude_unset=True) for task in payload.updates]
-        return db.bulk_update_tasks(tasks)
+        updated_count = db.bulk_update_tasks(tasks)
+
+        return {"updated_count": updated_count}
+    
+    except HTTPException:
+        raise
 
     except Exception as e:
         raise HTTPException(
@@ -108,8 +116,7 @@ def bulk_update_tasks(
 
 
 @router.delete(
-        "bulk-delete",
-
+        "/bulk-delete",
         status_code=status.HTTP_200_OK,
         summary="Bulk delete tasks",
         response_description="Number of tasks deleted"

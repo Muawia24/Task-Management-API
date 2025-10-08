@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlmodel import Session, select, update, case, func, or_, sa_func, in_
+from sqlmodel import Session, select, update, delete, case, func, or_
 from app.models.Task import Task, TaskPriority, TaskStatus
 from app.schemas import task
 from typing import Optional, List
@@ -141,7 +141,7 @@ class DB:
             .limit(limit)
         )
 
-        tasks = self.__session.exec(statment).all()
+        tasks = self.__session.exec(statement).all()
 
         if not tasks:
             raise HTTPException(status_code=404, detail="No Task Found")
@@ -162,7 +162,7 @@ class DB:
         for task_data in task_updates:
             task_id = task_data.get("id")
             if not task_id:
-                continue # Skip if no task_id provided
+                continue
 
             ids.append(task_data.get("id"))
 
@@ -205,4 +205,18 @@ class DB:
         Bulk delete multiple tasks based on provided task IDs.
         Returns the number of tasks deleted.
         """
-        pass
+        if not task_ids:
+            raise HTTPException(status_code=400, detail="No task IDs provided for bulk delete.")
+        
+        statement = (
+            delete(Task)
+            .where(Task.id.in_(task_ids))
+        )
+        
+        result = self.__session.exec(statement)
+        self.__session.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="No matching tasks found.")
+
+        return result.rowcount
