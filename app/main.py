@@ -1,22 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import task_routes
-from app.db.session import engine
-from sqlmodel import SQLModel
-from contextlib import asynccontextmanager
+from app.db.session import create_db_and_tables
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    SQLModel.metadata.create_all(engine)
-    yield
 
 app = FastAPI(
     title="Task Management API",
     description="A comprehensive task management API built with FastAPI",
     version="1.0.0",
-    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -28,6 +19,10 @@ app.add_middleware(
 )
 
 app.include_router(task_routes.router)
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
 
 @app.get("/")
 def read_root():

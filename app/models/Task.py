@@ -53,3 +53,8 @@ class Task(SQLModel, table=True):
         max_length=100,
         description="Assignee name"
     )
+    author: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        description="Author name"
+    )
