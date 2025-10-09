@@ -20,9 +20,6 @@ app.add_middleware(
 
 app.include_router(task_routes.router)
 
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 @app.get("/")
 def read_root():
