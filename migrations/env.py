@@ -12,7 +12,8 @@ from app.models.Task import Task
 # access to the values within the .ini file in use.
 config = context.config
 
-DB_PATH = str((Path().parent /'db.sqlite3').resolve())
+BASE_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = str((BASE_DIR / 'db.sqlite3').resolve())
 config.set_main_option("sqlalchemy.url", f"sqlite:///{DB_PATH}")
 
 # Interpret the config file for Python logging.
