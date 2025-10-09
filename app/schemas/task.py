@@ -102,8 +102,18 @@ class TaskBulkUpdateItem(BaseModel):
                 raise ValueError("Due date must be in the future")
         return val
 
+
 class TaskBulkUpdateRequest(BaseModel):
     updates: List[TaskBulkUpdateItem]
 
+
 class TaskBulkDeleteRequest(BaseModel):
     task_ids: List[int]
+
+
+class BulkUpdateResponse(BaseModel):
+    updated_count: int
+
+
+class BulkDeleteResponse(BaseModel):
+    deleted: int

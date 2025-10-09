@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.models.Task import TaskPriority, TaskStatus
-from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskBulkUpdateRequest, TaskBulkDeleteRequest
+from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse,TaskBulkUpdateRequest, TaskBulkDeleteRequest
+from app.schemas.task import BulkUpdateResponse, BulkDeleteResponse
 from app.db.database import DB
 from app.db.dependancies import get_db
 from typing import List, Optional
+from pydantic import BaseModel
+
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -80,11 +83,6 @@ def search_tasks(
         ) from e
 
 
-from pydantic import BaseModel
-
-class BulkUpdateResponse(BaseModel):
-    updated_count: int
-
 @router.put(
     "/bulk-update",
     status_code=status.HTTP_200_OK,
@@ -126,12 +124,13 @@ def bulk_update_tasks(
         "/bulk-delete",
         status_code=status.HTTP_200_OK,
         summary="Bulk delete tasks",
-        response_description="Number of tasks deleted"
+        response_description="Number of tasks deleted",
+        response_model=BulkDeleteResponse
 )
 def bulk_delete_tasks(
     payload: TaskBulkDeleteRequest,
     db: DB = Depends(get_db)    
-):
+) -> BulkDeleteResponse:
     """
     Bulk delete multiple tasks at once.
     - **task_ids**: List of task IDs to delete
@@ -139,7 +138,7 @@ def bulk_delete_tasks(
     try:
         count_deleted = db.bulk_delete_tasks(payload.task_ids)
 
-        return {"deleted": count_deleted}
+        return BulkDeleteResponse(deleted=count_deleted)
     
     except HTTPException:
         raise
