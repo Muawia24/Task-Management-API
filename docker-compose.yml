@@ -11,8 +11,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       # Mount the database file to persist data
-      - ./db.sqlite3:/app/db.sqlite3
-    restart: unless-stopped
+      - db_data:/app/db.sqlite3    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -31,7 +30,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       - ./app:/app/app
-      - ./db.sqlite3:/app/db.sqlite3
+      - db_data:/app/db.sqlite3
       - ./alembic.ini:/app/alembic.ini
       - ./migrations:/app/migrations
     command: >
@@ -42,3 +41,6 @@ services:
     restart: unless-stopped
     profiles:
       - dev
+
+volumes:
+  db_data:
