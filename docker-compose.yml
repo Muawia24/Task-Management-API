@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  task-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      # Mount the database file to persist data
+      - db_data:/app/db.sqlite3    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development service with hot reload
+  task-api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./app:/app/app
+      - db_data:/app/db.sqlite3
+      - ./alembic.ini:/app/alembic.ini
+      - ./migrations:/app/migrations
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  db_data:

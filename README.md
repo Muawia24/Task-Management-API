@@ -10,6 +10,8 @@ A comprehensive task management API built with FastAPI, SQLModel, and SQLite. Th
 - **Pagination**: Support for `skip`/`limit` query parameters
 - **Sorting**: Sort tasks by `title`, `created_at`, `due_date`, `priority`, `status`
 - **Full-text Search**: Search tasks by text across `title` and `description`
+- **Bulk Operations**: Bulk update and bulk delete tasks
+- **Author Tracking**: Optional `author` field on tasks
 - **Database Integration**: SQLModel/SQLAlchemy with SQLite
 - **API Documentation**: Automatic OpenAPI/Swagger documentation
 - **Error Handling**: Proper error responses with meaningful messages
@@ -48,11 +50,35 @@ python -m app.main
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### Method 3: Using Docker
+
+#### Build and run with Docker
+```bash
+docker build -t task-management-api .
+docker run -p 8000:8000 task-management-api
+```
+
+#### Using Docker Compose (Production)
+```bash
+docker-compose up -d
+```
+
+#### Using Docker Compose (Development with hot reload)
+```bash
+docker-compose --profile dev up task-api-dev
+```
+
 The API will be available at:
 - **API Base URL**: http://localhost:8000
 - **Interactive Documentation**: http://localhost:8000/docs
 - **Alternative Documentation**: http://localhost:8000/redoc
 - **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+### Docker Health Check
+The Docker container includes a health check that monitors the `/health` endpoint. You can check container health with:
+```bash
+docker ps
+```
 
 ## API Endpoints
 
@@ -66,6 +92,8 @@ The API will be available at:
 - `GET /tasks/{task_id}` - Get a specific task by ID
 - `PUT /tasks/{task_id}` - Update an existing task
 - `DELETE /tasks/{task_id}` - Delete a task
+- `PUT /tasks/bulk-update` - Bulk update multiple tasks
+- `DELETE /tasks/bulk-delete` - Bulk delete multiple tasks
 
 ### Sorting
 - `GET /tasks/sort-by/{field}` - Sort tasks by a field
@@ -81,6 +109,15 @@ The API will be available at:
 - `GET /tasks/?priority={priority}` - Filter tasks by priority
 - Both filters can be combined with pagination: `GET /tasks/?status={status}&priority={priority}&skip=0&limit=10`
 
+### Bulk Operations
+- `PUT /tasks/bulk-update` - Update multiple tasks in one request
+  - Body: `{ "updates": [{ "id": 1, "status": "completed", ... }, ...] }`
+  - Returns: `{ "updated_count": <number> }`
+  - Validation: 400 for empty updates, 404 if any ID is not found, 422 for invalid data
+- `DELETE /tasks/bulk-delete` - Delete multiple tasks in one request
+  - Body: `{ "task_ids": [1, 2, 3] }`
+  - Returns: `{ "deleted": <number> }`
+
 ## Data Models
 
 ### Task Fields
@@ -95,6 +132,7 @@ The API will be available at:
 | updated_at | DateTime | Optional | Last update timestamp |
 | due_date | DateTime | Optional | Task deadline |
 | assigned_to | String | Optional, Max 100 chars | Assignee name |
+| author | String | Optional, Max 100 chars | Author name |
 
 ### Enums
 
@@ -120,7 +158,8 @@ curl -X POST "http://localhost:8000/tasks/" \
        "title": "Complete project documentation",
        "description": "Write comprehensive documentation for the project",
        "priority": "high",
-       "assigned_to": "John Doe"
+       "assigned_to": "John Doe",
+       "author": "Alice"
      }'
 ```
 
@@ -167,6 +206,27 @@ curl -X PUT "http://localhost:8000/tasks/1" \
      }'
 ```
 
+### Bulk Update Tasks
+```bash
+curl -X PUT "http://localhost:8000/tasks/bulk-update" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "updates": [
+         { "id": 1, "status": "completed" },
+         { "id": 2, "priority": "urgent", "due_date": "2030-01-01T00:00:00Z" }
+       ]
+     }'
+```
+
+### Bulk Delete Tasks
+```bash
+curl -X DELETE "http://localhost:8000/tasks/bulk-delete" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "task_ids": [1, 2, 3]
+     }'
+```
+
 ### Notes on Search
 - Case-insensitive search across `title` and `description`
 - Empty `text` returns `400`
@@ -200,6 +260,36 @@ The API returns appropriate HTTP status codes:
 ## Database
 
 The application uses SQLite for data storage. The database file (`db.sqlite3`) is automatically created when the application starts. Tables are created automatically based on the SQLModel definitions.
+
+### Database Migrations (Alembic)
+
+This project uses Alembic for schema migrations. Existing migrations are stored under `migrations/versions/` (e.g., the migration adding the `author` field).
+
+#### Apply existing migrations
+```bash
+alembic upgrade head
+```
+
+#### Create a new migration after model changes
+1. Update your SQLModel definitions (e.g., in `app/models/Task.py`).
+2. Generate a migration script:
+```bash
+alembic revision --autogenerate -m "describe your change"
+```
+3. Review the generated file in `migrations/versions/` and adjust if needed.
+4. Apply the migration:
+```bash
+alembic upgrade head
+```
+
+#### Downgrade (rollback) a migration
+```bash
+alembic downgrade -1
+```
+
+Notes:
+- On Windows/PowerShell inside the provided `venv`, use the bundled `alembic.exe` or run `python -m alembic ...`.
+- With SQLite, some operations (e.g., dropping columns) may require Alembic to emit batch operations; check the generated script before applying.
 
 ## Development
 
